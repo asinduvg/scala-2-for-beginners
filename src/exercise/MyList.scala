@@ -18,9 +18,11 @@ abstract class MyList[+A] {
 
   def map[B](transformer: MyTransformer[A, B]): MyList[B]
 
-  //  def flatMap[B](transformer: MyTransformer[A, MyList[B]]): MyList[B]
+  def flatMap[B](transformer: MyTransformer[A, MyList[B]]): MyList[B]
 
   def filter(predicate: MyPredicate[A]): MyList[A]
+
+  def ++[B >: A](list: MyList[B]): MyList[B]
 
 }
 
@@ -39,7 +41,9 @@ object Empty extends MyList[Nothing] {
 
   override def map[B](transformer: MyTransformer[Nothing, B]): MyList[B] = Empty
 
-  //  override def flatMap[B](transformer: MyTransformer[Nothing, MyList[B]]): MyList[B] = Empty
+  override def flatMap[B](transformer: MyTransformer[Nothing, MyList[B]]): MyList[B] = Empty
+
+  override def ++[B >: Nothing](list: MyList[B]): MyList[B] = list
 }
 
 class Cons[+A](h: A, t: MyList[A]) extends MyList[A] {
@@ -55,6 +59,16 @@ class Cons[+A](h: A, t: MyList[A]) extends MyList[A] {
     if (t.isEmpty) "" + h
     else h + " " + t.printElements
 
+  /*
+  * [1, 2] ++ [3, 4, 5]
+  * = new Cons(1, [2] ++ [3, 4, 5])
+  * = new Cons(1, new Cons(2, Empty ++ [3, 4, 5]))
+  * = new Cons(1, new Cons(2, [3, 4, 5]))
+  * = new Cons(1, new Cons(2, new Cons(3, new Cons(4, new Cons(5))))
+  *
+  * */
+  override def ++[B >: A](list: MyList[B]): MyList[B] = new Cons[B](h, t ++ list)
+
   override def filter(predicate: MyPredicate[A]): MyList[A] = {
     if (predicate.test(this.head)) new Cons[A](h, this.tail.filter(predicate))
     else this.tail.filter(predicate)
@@ -62,6 +76,10 @@ class Cons[+A](h: A, t: MyList[A]) extends MyList[A] {
 
   override def map[B](transformer: MyTransformer[A, B]): MyList[B] = {
     new Cons[B](transformer.transform(this.head), this.tail.map(transformer))
+  }
+
+  override def flatMap[B](transformer: MyTransformer[A, MyList[B]]): MyList[B] = {
+    transformer.transform(this.head) ++ this.tail.flatMap(transformer)
   }
 
 }
@@ -87,11 +105,19 @@ object ListTest extends App {
   val listOfIntegers: MyList[Int] = new Cons[Int](1, new Cons[Int](2, new Cons[Int](3, Empty)))
   val listOfStrings: MyList[String] = new Cons[String]("Asindu", new Cons[String]("Chamika", new Cons[String]("VG", Empty)))
 
-  //  println(listOfIntegers)
-  //  println(listOfStrings)
+  println(listOfIntegers.map(new MyTransformer[Int, Int] {
+    override def transform(elem: Int): Int = elem * 2
+  }))
 
-  val evenPredicate = new EvenPredicate
-  println(evenPredicate.test(23))
+  println(listOfStrings.map(new MyTransformer[String, Int] {
+    override def transform(elem: String): Int = 1
+  }))
+
+  println(listOfIntegers.filter(new EvenPredicate))
+
+  println(listOfIntegers.flatMap(new MyTransformer[Int, MyList[Int]] {
+    override def transform(elem: Int): MyList[Int] = new Cons[Int](elem, new Cons[Int](elem * 2, Empty))
+  }))
 
 }
 
