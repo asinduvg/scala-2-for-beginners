@@ -1,6 +1,5 @@
 package exercise
 
-import exercise.ListTest.EvenPredicate
 import lectures.part2oop.Generics.MyList
 
 abstract class MyList[+A] {
@@ -19,7 +18,7 @@ abstract class MyList[+A] {
 
   def map[B](transformer: MyTransformer[A, B]): MyList[B]
 
-  def flatMap[B](transformer: MyTransformer[A, MyList[B]]): MyList[B]
+  //  def flatMap[B](transformer: MyTransformer[A, MyList[B]]): MyList[B]
 
   def filter(predicate: MyPredicate[A]): MyList[A]
 
@@ -40,7 +39,7 @@ object Empty extends MyList[Nothing] {
 
   override def map[B](transformer: MyTransformer[Nothing, B]): MyList[B] = Empty
 
-  override def flatMap[B](transformer: MyTransformer[Nothing, MyList[B]]): MyList[B] = Empty
+  //  override def flatMap[B](transformer: MyTransformer[Nothing, MyList[B]]): MyList[B] = Empty
 }
 
 class Cons[+A](h: A, t: MyList[A]) extends MyList[A] {
@@ -61,7 +60,9 @@ class Cons[+A](h: A, t: MyList[A]) extends MyList[A] {
     else this.tail.filter(predicate)
   }
 
-  override def map[B](transformer: MyTransformer[A, B]): MyList[B] = ???
+  override def map[B](transformer: MyTransformer[A, B]): MyList[B] = {
+    new Cons[B](transformer.transform(this.head), this.tail.map(transformer))
+  }
 
 }
 
@@ -69,10 +70,16 @@ trait MyPredicate[-T] {
   def test(value: T): Boolean
 }
 
-trait MyTransformer[-A, B]
+trait MyTransformer[-A, B] {
+  def transform(elem: A): B
+}
 
 class EvenPredicate extends MyPredicate[Int] {
   override def test(n: Int): Boolean = n % 2 == 0
+}
+
+class StringToIntTransformer extends MyTransformer[String, Int] {
+  override def transform(elem: String): Int = ???
 }
 
 
